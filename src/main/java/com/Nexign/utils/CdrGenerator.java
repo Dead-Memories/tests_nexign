@@ -5,9 +5,11 @@ import com.fasterxml.jackson.databind.SerializationFeature;
 
 import java.io.File;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.function.Supplier;
+import java.util.stream.Collectors;
 
 /**
  * Утилита для генерации JSON-файлов с CDR. Все файлы сохраняются в отдельную папку "TestResources":
@@ -26,19 +28,20 @@ public class CdrGenerator {
                 .enable(SerializationFeature.INDENT_OUTPUT);
 
         // 1. Генерируем файл с 10 валидными CDR
-        List<Map<String, String>> validList = new ArrayList<>();
-        for (int i = 0; i < 10; i++) {
-            validList.add(generateValidCdr());
-        }
-        File validFile = new File(dir, "cdr_valid.json");
-        mapper.writeValue(validFile, validList);
+        List<Record> rawValid = new ArrayList<>();
+        for (int i = 0; i < 10; i++) rawValid.add(createRecord(generateValidCdr()));
+        List<Record> validProcessed = rawValid.stream()
+                .flatMap(CdrGenerator::splitIfCrossMidnight)
+                .sorted(Comparator.comparing(r -> r.start))
+                .collect(Collectors.toList());
+        writeJson(mapper, new File(dir, "cdr_valid.json"), validProcessed);
         System.out.println("Generated cdr_valid.json with 10 valid records");
 
         // 2. Генерируем файлы с негативными кейсами: каждый файл содержит 9 валидных + 1 негативный кейс
         Map<String, Supplier<Map<String, String>>> negativeCases = new LinkedHashMap<>();
         negativeCases.put("invalid_dates", CdrGenerator::generateInvalidDates);
         negativeCases.put("nonexistent_operator", CdrGenerator::generateNonexistentOperator);
-        negativeCases.put("invalid_number", CdrGenerator::generateInvalidNumber);
+        negativeCases.put("invalid_msisdn", CdrGenerator::generateInvalidMsisdn);
         negativeCases.put("bad_flag", CdrGenerator::generateBadFlag);
         negativeCases.put("missing_field", CdrGenerator::generateMissingField);
 
@@ -59,6 +62,50 @@ public class CdrGenerator {
             System.out.println("Generated " + fileName + " with 9 valid + 1 " + caseName);
         }
     }
+
+    private static void writeJson(ObjectMapper mapper, File file, List<Record> records) throws Exception {
+        List<Map<String,String>> list = records.stream().map(Record::toMap).collect(Collectors.toList());
+        mapper.writeValue(file, list);
+        System.out.println("Generated " + file.getAbsolutePath() + " with " + records.size() + " records");
+    }
+
+    // Для удобства структуры
+    private static class Record {
+        LocalDateTime start;
+        LocalDateTime end;
+        String flag, initiator, receiver;
+        Record(LocalDateTime s, LocalDateTime e, String f, String i, String r) {
+            start=s; end=e; flag=f; initiator=i; receiver=r;
+        }
+        Map<String,String> toMap() {
+            return Map.of(
+                    "flag", flag,
+                    "initiator", initiator,
+                    "receiver", receiver,
+                    "startDate", start.format(FORMATTER),
+                    "endDate",   end.format(FORMATTER)
+            );
+        }
+    }
+
+    private static Record createRecord(Map<String,String> data) {
+        LocalDateTime s = LocalDateTime.parse(data.get("startDate"), FORMATTER);
+        LocalDateTime e = LocalDateTime.parse(data.get("endDate"), FORMATTER);
+        return new Record(s, e, data.get("flag"), data.get("initiator"), data.get("receiver"));
+    }
+
+    private static java.util.stream.Stream<Record> splitIfCrossMidnight(Record r) {
+        if (r.start.toLocalDate().equals(r.end.toLocalDate())) {
+            return java.util.stream.Stream.of(r);
+        } else {
+            LocalDateTime endOfDay = LocalDateTime.of(r.start.toLocalDate(), LocalTime.MAX);
+            LocalDateTime startNext = LocalDateTime.of(r.end.toLocalDate(), LocalTime.MIN);
+            Record first = new Record(r.start, endOfDay, r.flag, r.initiator, r.receiver);
+            Record second = new Record(startNext, r.end, r.flag, r.initiator, r.receiver);
+            return java.util.stream.Stream.of(first, second);
+        }
+    }
+
 
     // Генерация валидной CDR-записи
     private static Map<String, String> generateValidCdr() {
@@ -95,7 +142,7 @@ public class CdrGenerator {
         );
     }
 
-    private static Map<String, String> generateInvalidNumber() {
+    private static Map<String, String> generateInvalidMsisdn() {
         return Map.of(
                 "flag", "01",
                 "initiator", randomPhone(),
