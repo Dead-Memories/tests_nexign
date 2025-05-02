@@ -11,7 +11,7 @@
     <relativePath/>
   </parent>
 
-  <groupId>com.yourcompany</groupId>
+  <groupId>com.Nexign</groupId>
   <artifactId>tests_nexign</artifactId>
   <version>1.0-SNAPSHOT</version>
   <properties>
@@ -19,14 +19,12 @@
   </properties>
 
   <dependencies>
-    <!-- Для генератора CDR и любых JSON-сериализаций -->
     <dependency>
       <groupId>com.fasterxml.jackson.core</groupId>
       <artifactId>jackson-databind</artifactId>
       <version>2.15.2</version>
     </dependency>
 
-    <!-- REST Assured для автотестов -->
     <dependency>
       <groupId>io.rest-assured</groupId>
       <artifactId>rest-assured</artifactId>
@@ -46,7 +44,6 @@
       <scope>test</scope>
     </dependency>
 
-    <!-- Spring Boot тестовый стартер (JUnit5, MockMVC и т.д.) -->
     <dependency>
       <groupId>org.springframework.boot</groupId>
       <artifactId>spring-boot-starter-test</artifactId>
@@ -56,7 +53,6 @@
 
   <build>
     <plugins>
-      <!-- Чтобы mvn test запускал JUnit5 -->
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-surefire-plugin</artifactId>
