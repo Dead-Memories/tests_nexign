@@ -54,4 +54,43 @@
 
 ## 1. Автотесты на API сервиса с использованием RestAssured
 
+Опишем, какие эндпоинты у нас есть для дальнейшего их покрытия. 
+
+1. Коммутатор
+   - POST http://localhost:8080/generate
+   - DELETE http://localhost:8080/truncate
+2. BRT
+   - POST http://localhost:8081/processCdrList
+3. HRS
+   - POST http://localhost:8082/tarifficateCall
+   - GET http://localhost:8082/monthTariffication/11
+4. CRM
+   - POST http://localhost:8083/manager/subscriber/add
+   - GET http://localhost:8083/manager/subscriber/{msisdn}/fullinfo
+   - PATCH http://localhost:8083/manager/subscriber/{msisdn}/update
+   - DELETE http://localhost:8083/manager/subscriber/{msisdn}/delete
+   - GET http://localhost:8083/subscriber/{msisdn}/getbalance
+   - GET http://localhost:8083/manager/subscriber/{msisdn}/gettariff
+   - PUT http://localhost:8083/manager/subscriber/{{msisdn}}/changetariff
+   - PUT http://localhost:8083/subscriber/{msisdn}/changebalance
+
+| Сервис      | Тип запроса | Запрос                                         | Тело запроса            | Код ответа   | Ответ                 | Покрытие                    |
+|-------------|-------------|------------------------------------------------|-------------------------|--------------|-----------------------|---------------------------  |
+| Коммутатор  | POST        | `/generate`                                    | —                       | 200 ОК       | {num} rows genetated  | Отправить запрос, проверить ответ      |
+| Коммутатор  | DELETE      | `/truncate`                                    | —                       | 204          | -                     |(?)                          |
+| BRT         | POST        | `/processCdrList`                              | JSON-массив CDR         | 200 ОК       | -                     | Покрыт в задании 2          |
+| HRS         | POST        | `/tarifficateCall`                             | {"minutes": 10, "callType": 1, "isRomashkaCall": 1, "tariffId": 12, "tariffBalance": 6, "balance": 0.0}        | 200 ОК       | -                     | Покрыть основные сценарии для ТП              |
+| HRS         | GET         | `/monthTariffication/11`                       | —                       | 200 ОК       | tarif info            | Покрыть       |
+| CRM         | POST        | `/manager/subscriber/add`                      | JSON SubInfo            | 201          | -                     |               |
+| CRM         | GET         | `/manager/subscriber/{msisdn}/fullinfo`        | —                       | 200 ОК       | -                     |               |
+| CRM         | PATCH       | `/manager/subscriber/{msisdn}/update`          | JSON SubInfo            | 200 ОК       | -                     |               |
+| CRM         | DELETE      | `/manager/subscriber/{msisdn}/delete`          | —                       | 204          | Deleted               |               |
+| CRM         | GET         | `/subscriber/{msisdn}/getbalance`              | —                       | 200 ОК       | -                     |               |
+| CRM         | GET         | `/manager/subscriber/{msisdn}/gettariff`       | —                       | 200 ОК       | -                     |               |
+| CRM         | PUT         | `/manager/subscriber/{{msisdn}}/changetariff`  | JSON NewTariffInfo      | 200 ОК       | -                     |               |
+| CRM         | PUT         | `/subscriber/{msisdn}/changebalance`           | JSON BalanceTopUp       | 200 ОК       | -                     |               |
+
+
+
+
 ## 3. Автотесты на e2e процесс
