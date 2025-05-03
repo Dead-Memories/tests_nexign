@@ -30,8 +30,8 @@
      с) Для пустого файла код ответа 500 Internal Server Error
 
 Результат тестирования на данном этапе выглядит так: 
-![image](https://github.com/user-attachments/assets/5589bca0-5475-4514-9c45-37f2e3b0f322)
 
+<img src="[docs/assets/screenshot.png](https://github.com/user-attachments/assets/5589bca0-5475-4514-9c45-37f2e3b0f322)" width="400" alt="Скриншот результата" />
 
 
 ## 4. Автоматизация создания тестовых CDR
