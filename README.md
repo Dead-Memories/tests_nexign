@@ -1,3 +1,78 @@
+## 1. Автотесты на API сервиса с использованием RestAssured
+
+Опишем, какие эндпоинты у нас есть для дальнейшего их покрытия. 
+
+1. Коммутатор
+   - POST http://localhost:8080/generate
+   - DELETE http://localhost:8080/truncate
+2. BRT
+   - POST http://localhost:8081/processCdrList
+3. HRS
+   - POST http://localhost:8082/tarifficateCall
+   - GET http://localhost:8082/monthTariffication/11
+4. CRM
+   - POST http://localhost:8083/manager/subscriber/add
+   - GET http://localhost:8083/manager/subscriber/{msisdn}/fullinfo
+   - PATCH http://localhost:8083/manager/subscriber/{msisdn}/update
+   - DELETE http://localhost:8083/manager/subscriber/{msisdn}/delete
+   - GET http://localhost:8083/subscriber/{msisdn}/getbalance
+   - GET http://localhost:8083/manager/subscriber/{msisdn}/gettariff
+   - PUT http://localhost:8083/manager/subscriber/{{msisdn}}/changetariff
+   - PUT http://localhost:8083/subscriber/{msisdn}/changebalance
+
+| Сервис      | Тип запроса | Запрос                                         | Тело запроса            | Код ответа   | Ответ                 | Покрытие                    |
+|-------------|-------------|------------------------------------------------|-------------------------|--------------|-----------------------|---------------------------  |
+| Коммутатор  | POST        | `/generate`                                    | —                       | 200 ОК       | {num} rows genetated  | Отправить запрос, проверить ответ      |
+| Коммутатор  | DELETE      | `/truncate`                                    | —                       | 204          | -                     |(?)                          |
+| BRT         | POST        | `/processCdrList`                              | JSON-массив CDR         | 200 ОК       | -                     | Покрыт в задании 2          |
+| HRS         | POST        | `/tarifficateCall`                             | {"minutes": 10, "callType": 1, "isRomashkaCall": 1, "tariffId": 12, "tariffBalance": 6, "balance": 0.0}        | 200 ОК       | -                     | Покрыть основные сценарии для ТП              |
+| HRS         | GET         | `/monthTariffication/11`                       | —                       | 200 ОК       | tarif info            | Покрыть       |
+| CRM         | POST        | `/manager/subscriber/add`                      | JSON SubInfo            | 201          | -                     |               |
+| CRM         | GET         | `/manager/subscriber/{msisdn}/fullinfo`        | —                       | 200 ОК       | -                     |               |
+| CRM         | PATCH       | `/manager/subscriber/{msisdn}/update`          | JSON SubInfo            | 200 ОК       | -                     |               |
+| CRM         | DELETE      | `/manager/subscriber/{msisdn}/delete`          | —                       | 204          | Deleted               |               |
+| CRM         | GET         | `/subscriber/{msisdn}/getbalance`              | —                       | 200 ОК       | -                     |               |
+| CRM         | GET         | `/manager/subscriber/{msisdn}/gettariff`       | —                       | 200 ОК       | -                     |               |
+| CRM         | PUT         | `/manager/subscriber/{{msisdn}}/changetariff`  | JSON NewTariffInfo      | 200 ОК       | -                     |               |
+| CRM         | PUT         | `/subscriber/{msisdn}/changebalance`           | JSON BalanceTopUp       | 200 ОК       | -                     |               |
+
+#### Полученные автотесты на API по заданию: 
+1) Коммутатор
+   
+  а) Лежат в файле CommutatorApiTest.
+  
+  b) Содержат 3 теста и последующую проверку ответа сервера: вызов API \generate, вызов API \truncate и повторный вызов API \generate при уже сгенерированных данных.
+  
+  c) Тесты прошли успешно, результат на скриншоте ниже.
+  
+<img src="Test_results_cdr.png" width="400" alt="Скриншот результата" />
+
+2) BRT
+   
+   а) Сервис содержит одну API и проверяется в рамках задания 2.
+   
+3) HRS
+   
+  а) Лежат в файле HrsApiTest.
+
+  b) Содержат по 2 теста на каждый эндпоинт - позитивный и негативный вариант. Для POST \tarificateCall это отправка запроса с корректным телом запроса, ответ 200 ОК. Далее отправка с некорректным телом, ответ 400. Запрос GET \mounthTarification вызываю для тарифа с id = 11 и id = 12. Для помесячного тарифа ответ корректный 200, для классики 400 и расшифровка ошибки.
+  
+  c) Тесты прошли успешно, результат на скриншоте ниже.
+  
+  d) Возможные доработки: расширить количество негативных сценариев для эндпоинта \tarificateCall, добавить проверку актуальных параметров тарифа для эндпоинта \mounthTarification
+  
+<img src="Test_results_hrs.png" width="400" alt="Скриншот результата" />
+
+4) CRM
+   
+  а) Автотесты разделены на три категории и лежат в файлах BalanceApiTest, SubscriberCrudTest и TariffApiTest. В них лежат соответственно тесты для работы с балансом абонента, самими абонентами и их тарифами.
+  
+  b) 
+  
+  c) Успешность тестов пока не проверена, так как API CRM еще не реализован. В данный момент покрыты по 1-2 критичных сценария для каждого эндпоинта, по готовности сервиса количество проверок может быть расширено и поставлено на регресс. 
+
+
+
 ## 2. Автотесты на валидацию CDR сервисом BRT
 
 Перед написанием автотеста валидация CDR сервисом BRT была протестирована вручную. Результаты проверки лежат в [документе](https://docs.google.com/spreadsheets/d/1Z3PP9ipYX9FlLFWhs0BKGFT_9WMVagtTPuESBTi5ByA/edit?usp=sharing), по результатам проверки заключено, что сервис не всегда корректно отрабатывает при негативных сценариях, так как при разработке предполагалось, что BRT уверен в корректности данных, которые получает от CDR. Заводить баг и отправлять на доработку разработчику учитывая сроки и время разработки не считаю целесообразным. 
@@ -52,78 +127,5 @@
 В данный момент генерация ведется по рандомным msisdn, но можно взять те, что лежат у нас в базе и генерировать из мапы реальных наших абонентов.
 
 
-## 1. Автотесты на API сервиса с использованием RestAssured
-
-Опишем, какие эндпоинты у нас есть для дальнейшего их покрытия. 
-
-1. Коммутатор
-   - POST http://localhost:8080/generate
-   - DELETE http://localhost:8080/truncate
-2. BRT
-   - POST http://localhost:8081/processCdrList
-3. HRS
-   - POST http://localhost:8082/tarifficateCall
-   - GET http://localhost:8082/monthTariffication/11
-4. CRM
-   - POST http://localhost:8083/manager/subscriber/add
-   - GET http://localhost:8083/manager/subscriber/{msisdn}/fullinfo
-   - PATCH http://localhost:8083/manager/subscriber/{msisdn}/update
-   - DELETE http://localhost:8083/manager/subscriber/{msisdn}/delete
-   - GET http://localhost:8083/subscriber/{msisdn}/getbalance
-   - GET http://localhost:8083/manager/subscriber/{msisdn}/gettariff
-   - PUT http://localhost:8083/manager/subscriber/{{msisdn}}/changetariff
-   - PUT http://localhost:8083/subscriber/{msisdn}/changebalance
-
-| Сервис      | Тип запроса | Запрос                                         | Тело запроса            | Код ответа   | Ответ                 | Покрытие                    |
-|-------------|-------------|------------------------------------------------|-------------------------|--------------|-----------------------|---------------------------  |
-| Коммутатор  | POST        | `/generate`                                    | —                       | 200 ОК       | {num} rows genetated  | Отправить запрос, проверить ответ      |
-| Коммутатор  | DELETE      | `/truncate`                                    | —                       | 204          | -                     |(?)                          |
-| BRT         | POST        | `/processCdrList`                              | JSON-массив CDR         | 200 ОК       | -                     | Покрыт в задании 2          |
-| HRS         | POST        | `/tarifficateCall`                             | {"minutes": 10, "callType": 1, "isRomashkaCall": 1, "tariffId": 12, "tariffBalance": 6, "balance": 0.0}        | 200 ОК       | -                     | Покрыть основные сценарии для ТП              |
-| HRS         | GET         | `/monthTariffication/11`                       | —                       | 200 ОК       | tarif info            | Покрыть       |
-| CRM         | POST        | `/manager/subscriber/add`                      | JSON SubInfo            | 201          | -                     |               |
-| CRM         | GET         | `/manager/subscriber/{msisdn}/fullinfo`        | —                       | 200 ОК       | -                     |               |
-| CRM         | PATCH       | `/manager/subscriber/{msisdn}/update`          | JSON SubInfo            | 200 ОК       | -                     |               |
-| CRM         | DELETE      | `/manager/subscriber/{msisdn}/delete`          | —                       | 204          | Deleted               |               |
-| CRM         | GET         | `/subscriber/{msisdn}/getbalance`              | —                       | 200 ОК       | -                     |               |
-| CRM         | GET         | `/manager/subscriber/{msisdn}/gettariff`       | —                       | 200 ОК       | -                     |               |
-| CRM         | PUT         | `/manager/subscriber/{{msisdn}}/changetariff`  | JSON NewTariffInfo      | 200 ОК       | -                     |               |
-| CRM         | PUT         | `/subscriber/{msisdn}/changebalance`           | JSON BalanceTopUp       | 200 ОК       | -                     |               |
-
-
-#### Полученные автотесты на API по заданию: 
-1) Коммутатор
-   
-  а) Лежат в файле CommutatorApiTest.
-  
-  b) Содержат 3 теста и последующую проверку ответа сервера: вызов API \generate, вызов API \truncate и повторный вызов API \generate при уже сгенерированных данных.
-  
-  c) Тесты прошли успешно, результат на скриншоте ниже.
-  
-<img src="Test_results_cdr.png" width="400" alt="Скриншот результата" />
-
-2) BRT
-   
-   а) Сервис содержит одну API и проверяется в рамках задания 2.
-   
-3) HRS
-   
-  а) Лежат в файле HrsApiTest.
-
-  b) Содержат по 2 теста на каждый эндпоинт - позитивный и негативный вариант. Для POST \tarificateCall это отправка запроса с корректным телом запроса, ответ 200 ОК. Далее отправка с некорректным телом, ответ 400. Запрос GET \mounthTarification вызываю для тарифа с id = 11 и id = 12. Для помесячного тарифа ответ корректный 200, для классики 400 и расшифровка ошибки.
-  
-  c) Тесты прошли успешно, результат на скриншоте ниже.
-  
-  d) Возможные доработки: расширить количество негативных сценариев для эндпоинта \tarificateCall, добавить проверку актуальных параметров тарифа для эндпоинта \mounthTarification
-  
-<img src="Test_results_hrs.png" width="400" alt="Скриншот результата" />
-
-4) CRM
-   
-  а) Автотесты разделены на три категории и лежат в файлах BalanceApiTest, SubscriberCrudTest и TariffApiTest. В них лежат соответственно тесты для работы с балансом абонента, самими абонентами и их тарифами.
-  
-  b) 
-  
-  c) Успешность тестов пока не проверена, так как API CRM еще не реализован. В данный момент покрыты по 1-2 критичных сценария для каждого эндпоинта, по готовности сервиса количество проверок может быть расширено и поставлено на регресс. 
 
 ## 3. Автотесты на e2e процесс
