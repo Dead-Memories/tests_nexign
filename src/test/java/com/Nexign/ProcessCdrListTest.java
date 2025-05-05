@@ -54,11 +54,11 @@ public class ProcessCdrListTest extends BaseTest {
 
         // Лог: сформировано тело запроса
         String requestBody = MAPPER.writeValueAsString(cdrList);
-        System.out.println("Сформировано тело запроса: " + requestBody);
+//        System.out.println("Сформировано тело запроса: " + requestBody);
 
         // Лог: URL для отправки
         String endpoint = "/processCdrList";
-        System.out.println("Отправлено на URL: " + endpoint);
+//        System.out.println("Отправлено на URL: " + endpoint);
 
         // Выполняем запрос и получаем ответ
         Response response = given()
@@ -68,7 +68,7 @@ public class ProcessCdrListTest extends BaseTest {
                 .post(endpoint);
 
         // Лог: получен ответ
-        System.out.println("Получен ответ: " + response.asString());
+//        System.out.println("Получен ответ: " + response.asString());
 
         // Проверяем статус и тело
         response.then()
@@ -112,7 +112,7 @@ public class ProcessCdrListTest extends BaseTest {
                 .post("/processCdrList")
                 .then()
                 .statusCode(200)
-                .body(emptyString());
+                .body("size()", equalTo(9));
     }
 
     @Test
