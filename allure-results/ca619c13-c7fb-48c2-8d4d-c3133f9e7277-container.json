@@ -1,0 +1,1 @@
+{"uuid":"ca619c13-c7fb-48c2-8d4d-c3133f9e7277","name":"PUT /manager/subscriber/{msisdn}/changetariff - смена тарифа у тестового номера","children":["6ae6ae0d-d385-4d59-8bbd-0cbe0d9ee6b3"],"befores":[],"afters":[],"links":[],"start":1746474949820,"stop":1746474949829}

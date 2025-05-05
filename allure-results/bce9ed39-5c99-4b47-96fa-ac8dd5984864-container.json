@@ -1,0 +1,1 @@
+{"uuid":"bce9ed39-5c99-4b47-96fa-ac8dd5984864","name":"GET /manager/subscriber/{msisdn}/gettariff - получение тарифа у тестового номера","children":["573f87bf-857a-4b22-9c18-0e9da2fd5cf5"],"befores":[],"afters":[],"links":[],"start":1746472597776,"stop":1746472597784}

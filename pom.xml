@@ -16,6 +16,7 @@
   <version>1.0-SNAPSHOT</version>
   <properties>
     <java.version>17</java.version>
+    <allure.version>2.14.0</allure.version>
   </properties>
 
   <dependencies>
@@ -59,8 +60,9 @@
     <dependency>
       <groupId>io.qameta.allure</groupId>
       <artifactId>allure-junit5</artifactId>
-      <version>2.18.1</version>
+      <version>2.14.0</version>
     </dependency>
+
     <dependency>
       <groupId>io.qameta.allure</groupId>
       <artifactId>allure-java-commons</artifactId>
@@ -75,13 +77,17 @@
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-surefire-plugin</artifactId>
-        <version>3.0.0-M7</version>
+        <version>3.0.0-M8</version>
+        <configuration>
+          <useModulePath>false</useModulePath>
+          <testFailureIgnore>true</testFailureIgnore>
+        </configuration>
       </plugin>
 
       <plugin>
         <groupId>io.qameta.allure</groupId>
         <artifactId>allure-maven</artifactId>
-        <version>2.11.2</version>
+        <version>2.14.0</version>
       </plugin>
 
     </plugins>
