@@ -1,5 +1,7 @@
 package com.Nexign;
 
+import com.Nexign.e2e.Utils.DbHelper;
+import com.Nexign.e2e.Utils.TarifficationRequestGenerator;
 import io.restassured.http.ContentType;
 import io.restassured.response.Response;
 import org.junit.jupiter.api.DisplayName;
@@ -14,6 +16,9 @@ import static org.hamcrest.Matchers.equalTo;
  * Автотесты для HRS-сервиса по эндпоинтам /tarifficateCall и /monthTariffication
  */
 public class HrsApiTests extends BaseTest {
+    private static final int MONTHLY_TARIFF_ID = 12;
+    private static final int CLASSIC_TARIFF_ID = 11;
+
     @Override
     protected int getPort() {
         return 8082;
@@ -22,26 +27,16 @@ public class HrsApiTests extends BaseTest {
     @DisplayName("POST /tarifficateCall - запрос тарификации с корректным телом запроса")
     @Test
     public void tarifficateCall_validRequest() {
-        Map<String, Object> body = Map.of(
-                "minutes", 10,
-                "callType", 1,
-                "isRomashkaCall", 1,
-                "tariffId", 12,
-                "tariffBalance", 6,
-                "balance", 0.0
-        );
-
-        Response response = given()
+        TarifficationRequestGenerator.RequestResult rr = TarifficationRequestGenerator.generate();
+        given()
                 .contentType(ContentType.JSON)
-                .body(body)
+                .body(rr.body)
                 .when()
-                .post("/tarifficateCall");
-
-        response.then()
+                .post("/tarifficateCall")
+                .then()
                 .statusCode(200)
-                .contentType(ContentType.JSON)
-                .body("tariffBalanceChange", equalTo(-6))
-                .body("balanceChange", equalTo(-6.0F));
+                .body("tariffBalanceChange", equalTo(rr.expectedTariffBalanceChange))
+                .body("balanceChange", equalTo(rr.expectedBalanceChange));
     }
 
     @DisplayName("POST /tarifficateCall - запрос тарификации для несуществующего тарифа")
@@ -68,26 +63,35 @@ public class HrsApiTests extends BaseTest {
 
     @DisplayName("GET /monthTariffication/12 - запрос помесячной тарификации для Помесячного тарифа ")
     @Test
-    public void monthTariffication_validId() {
+    public void monthTariffication_validId() throws Exception {
+
+        int monthlyMinuteCapacity = DbHelper.selectInt(
+                "hrs",
+                "SELECT monthly_minute_capacity FROM tariff_parameter WHERE tariff_type_id =2 ",
+                "monthly_minute_capacity"
+        );
+        float monthlyFee = DbHelper.selectFloat(
+                "hrs",
+                "SELECT monthly_fee FROM tariff_parameter WHERE tariff_type_id =2",
+                "monthly_fee"
+        );
+
         Response response = given()
                 .when()
-                .get("/monthTariffication/12");
-
+                .get("/monthTariffication/" + MONTHLY_TARIFF_ID);
         response.then()
                 .statusCode(200)
                 .contentType(ContentType.JSON)
-                .body("tariffBalanceChange", equalTo(50))
-                .body("balanceChange", equalTo(-100.0F));
+                .body("tariffBalanceChange", equalTo(monthlyMinuteCapacity))
+                .body("balanceChange", equalTo(-monthlyFee));
     }
-
-//    TODO: добавить запрос параметров tariffBalanceChange и balanceChange из БД на случай, если параметры тарифа изменятся
 
     @DisplayName("GET /monthTariffication/11 - запрос помесячной тарификации для Классического тарифа")
     @Test
     public void monthTariffication_invalidId() {
         given()
                 .when()
-                .get("/monthTariffication/11")
+                .get("/monthTariffication/" + CLASSIC_TARIFF_ID)
                 .then()
                 .statusCode(409)
                 .body(equalTo("Помесячная тарификация не предрставляется для этого тарифа"));

@@ -99,4 +99,17 @@ public class DbHelper {
         Object val = list.get(0).get(fieldName);
         return val != null ? val.toString() : null;
     }
+
+    public static int selectInt(String service, String sql, String column) throws Exception {
+        try (Connection conn = getDbConnection(service);
+             Statement stmt = conn.createStatement();
+             ResultSet rs = stmt.executeQuery(sql)) {
+            if (rs.next()) {
+                return rs.getInt(column);
+            } else {
+                throw new RuntimeException("No rows returned for query: " + sql);
+            }
+        }
+    }
+
 }
