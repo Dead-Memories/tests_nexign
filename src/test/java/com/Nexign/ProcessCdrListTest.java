@@ -26,7 +26,7 @@ import static org.hamcrest.Matchers.*;
  * <p>
  * При отправке невалидного CDR-файла в теле запроса проверяем:
  * - статус 200
- * - тело ответа пустое
+ * - тело соответствует количеству валидных входных записей
  * <p>
  * В качестве файлов с тестовыми данными использую CDR, сгенерированные на предыдущих неделях
  */
@@ -52,25 +52,16 @@ public class ProcessCdrListTest extends BaseTest {
                 }
         );
 
-        // Лог: сформировано тело запроса
         String requestBody = MAPPER.writeValueAsString(cdrList);
-//        System.out.println("Сформировано тело запроса: " + requestBody);
 
-        // Лог: URL для отправки
         String endpoint = "/processCdrList";
-//        System.out.println("Отправлено на URL: " + endpoint);
 
-        // Выполняем запрос и получаем ответ
         Response response = given()
                 .contentType(ContentType.JSON)
                 .body(cdrList)
                 .when()
-                .post(endpoint);
+                .post(endpoint);;
 
-        // Лог: получен ответ
-//        System.out.println("Получен ответ: " + response.asString());
-
-        // Проверяем статус и тело
         response.then()
                 .statusCode(200)
                 .contentType(ContentType.JSON)
