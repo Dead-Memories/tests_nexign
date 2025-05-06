@@ -125,6 +125,10 @@
 
 <img src="test_results/Test_results_brt.png" width="400" alt="Скриншот результата" />
 
+После внесения изменений разработчиком часть кейсов стала корректно обрабатываться. Ожидаем, что все негативные кейсы будут отлавливаться
+
+<img src="test_results/Test_results_brt2.png" width="400" alt="Скриншот результата" />
+
 ### API HRS. 
 
 <img src="test_results/Test_results_hrs.png" width="400" alt="Скриншот результата" />
