@@ -54,10 +54,9 @@ public class ClassicTariffE2ETest extends BaseTest {
         );
     }
 
-//    @Epic("CRM Tests")
-//    @Feature("Subscriber CRUD")
-//    @Story("Создание абонента")
-//    @Severity(SeverityLevel.CRITICAL)
+    @Epic("e2e Tests")
+    @Story("Классика")
+    @Severity(SeverityLevel.CRITICAL)
     @DisplayName("E2E: Тарификация исходящего звонка внутри сети длительностью 1 сек")
     @Test
     void classicOutgoingCall() throws Exception {
@@ -100,5 +99,48 @@ public class ClassicTariffE2ETest extends BaseTest {
         );
         assertEquals(balanceRecvBefore, balanceRecvAfter, 0.01,
                 "Баланс принимающего вызов не должен меняться");
+    }
+
+    @Story("Классика")
+    @Severity(SeverityLevel.NORMAL)
+    @DisplayName("E2E: Входящий звонок 59 сек — без списания")
+    @Test
+    void classicIncomingCall() throws Exception {
+        // Фиксируем балансы до звонка
+        float initiatorBefore = DbHelper.selectFloat(
+                "brt",
+                "SELECT balance FROM subscriber WHERE msisdn='" + initiator + "'",
+                "balance"
+        );
+        float receiverBefore = DbHelper.selectFloat(
+                "brt",
+                "SELECT balance FROM subscriber WHERE msisdn='" + receiver + "'",
+                "balance"
+        );
+
+        // Генерируем входящий CDR: флаг "01", 59 сек
+        String cdrJson = CdrGeneratorUtil.generateOneCdr("01", receiver, initiator, 59);
+        RestHelper.processCdr(cdrJson);
+
+        // Проверяем запись звонка
+        String start = DbHelper.extractFirstField(cdrJson, "startDate");
+        String end   = DbHelper.extractFirstField(cdrJson, "endDate");
+        assertTrue(DbHelper.existsCall(start, end), "Запись звонка должна быть в BRT DB");
+
+        // Проверяем, что балансы не изменились
+        float initiatorAfter = DbHelper.selectFloat(
+                "brt",
+                "SELECT balance FROM subscriber WHERE msisdn='" + initiator + "'",
+                "balance"
+        );
+        float receiverAfter = DbHelper.selectFloat(
+                "brt",
+                "SELECT balance FROM subscriber WHERE msisdn='" + receiver + "'",
+                "balance"
+        );
+        assertEquals(initiatorBefore, initiatorAfter, 0.01,
+                "Баланс инициатора при входящем звонке должен измениться");
+        assertEquals(receiverBefore, receiverAfter, 0.01,
+                "Баланс получателя при входящем звонке не должен измениться");
     }
 }
