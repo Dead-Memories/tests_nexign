@@ -139,3 +139,12 @@
 
 ### Allure report
 
+Для того, чтобы открыть allure report, я:
+
+0. Подключила зависимости и плагины 
+1. Генерирую отчет allure generate allure-results -o allure-report --clean
+2. Перехожу в папку с отчетом cd allure-report
+3. Запускаю сервер для просмотра python3 -m http.server 8080
+4. Открываю в браузере http://localhost:8080/ 
+
+![image](https://github.com/user-attachments/assets/ce20b039-0029-42a6-ad1e-034250963374)
