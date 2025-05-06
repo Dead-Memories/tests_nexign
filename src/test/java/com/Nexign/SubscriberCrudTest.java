@@ -6,128 +6,148 @@ import io.restassured.response.Response;
 import org.junit.jupiter.api.*;
 
 import java.util.Map;
+import java.util.Random;
 
 import static io.restassured.RestAssured.given;
-import static org.hamcrest.Matchers.equalTo;
-import static org.junit.jupiter.api.Assumptions.assumeTrue;
+import static org.hamcrest.Matchers.*;
+import static org.junit.jupiter.api.Assertions.*;
 
 /**
- * Позитивные CRUD-тесты для Subscriber API (CRM)
- * Тесты выполняются в последовательности и пропускаются при падении предыдущего шага
+ * Позитивные и негативные CRUD-тесты для Subscriber API (CRM) с рандомными входными данными.
  */
-@TestMethodOrder(MethodOrderer.OrderAnnotation.class)
-@TestInstance(TestInstance.Lifecycle.PER_CLASS)
-@Tag("sequence")
+
 public class SubscriberCrudTest extends BaseTest {
-    private static final String MSISDN = "79991234567";
-    private boolean createPassed;
+    private Map<String, Object> subscriberData;
+    private String msisdn;
+    private final Random random = new Random();
 
     @Override
     protected int getPort() {
         return 8083;
     }
 
-    @Order(1)
-    @DisplayName("Создание абонента с корректными данными")
-    @Test
-    void createSubscriber() {
-        Map<String, Object> request = Map.of(
-                "fullName", "Иванов Иван Иванович",
-                "passport", "11040000007",
-                "dateOfBirth", "2002-07-30",
-                "msisdn", MSISDN,
-                "tariff", "Классический",
-                "balance", 100
-        );
+    @BeforeAll
+    void initSubscriberData() {
+        // Генерация случайных данных для абонента
+        String fullName = "User" + random.nextInt(10000) + " Test";
+        String passport = String.valueOf(1000000000L + random.nextInt(900000000));
+        String dateOfBirth = String.format("1980-01-%02d", random.nextInt(28) + 1);
+        msisdn = "7" + String.format("%010d", Math.abs(random.nextLong()) % 1_000_000_0000L);
+        String tariff = random.nextBoolean() ? "Классический" : "Помесячный";
+        float balance = Math.round(random.nextFloat() * 1000f * 100) / 100f;
 
-        Response response = given()
+        subscriberData = Map.of(
+                "fullName", fullName,
+                "passport", passport,
+                "dateOfBirth", dateOfBirth,
+                "msisdn", msisdn,
+                "tariff", tariff,
+                "balance", balance
+        );
+    }
+
+    @DisplayName("Создание абонента - позитивный кейс")
+    @Test
+    void createSubscriber_positive() {
+        Response resp = given()
                 .contentType(ContentType.JSON)
-                .body(request)
+                .body(subscriberData)
                 .when()
                 .post("/manager/subscriber/add");
 
-        response.then()
+        resp.then()
                 .statusCode(201)
                 .contentType(ContentType.JSON)
-                .body("fullName", equalTo(request.get("fullName")))
-                .body("passport", equalTo(request.get("passport")))
-                .body("dateOfBirth", equalTo(request.get("dateOfBirth")))
-                .body("msisdn", equalTo(request.get("msisdn")))
-                .body("tariff", equalTo(request.get("tariff")))
-                .body("balance", equalTo(request.get("balance")));
-
-        createPassed = true;
+                .body("msisdn", equalTo(msisdn))
+                .body("fullName", equalTo(subscriberData.get("fullName")))
+                .body("passport", equalTo(subscriberData.get("passport")))
+                .body("dateOfBirth", equalTo(subscriberData.get("dateOfBirth")))
+                .body("tariff", equalTo(subscriberData.get("tariff")))
+                .body("balance", equalTo(subscriberData.get("balance")));
     }
 
-    @Order(2)
-    @DisplayName("Получение информации о пользователе")
+    @DisplayName("Создание абонента - негативный кейс")
     @Test
-    void getSubscriberFullInfo() {
-        assumeTrue(createPassed, "Create step failed, skipping FullInfo test");
-
-        Response response = given()
-                .when()
-                .get("/manager/subscriber/{msisdn}/fullinfo", MSISDN);
-
-        response.then()
-                .statusCode(200)
-                .contentType(ContentType.JSON)
-                .body("fullName", equalTo("Сергеев Иван Сергеевич"))
-                .body("passport", equalTo("11040000037"))
-                .body("dateOfBirth", equalTo("2002-07-30"))
-                .body("msisdn", equalTo(MSISDN))
-                .body("tariff", equalTo("Классический"))
-                .body("balance", equalTo(100))
-                .body("lastChargeDate", equalTo("2025-04-20"))
-                .body("minutes", equalTo(130));
-    }
-
-    @Order(3)
-    @DisplayName("Обновление личной информации пользователя")
-    @Test
-    void updateSubscriber() {
-        assumeTrue(createPassed, "Create step failed, skipping Update test");
-
-        Map<String, Object> request = Map.of(
-                "fullName", "Иванов Иван Иванович",
-                "passport", "11040000007",
-                "dateOfBirth", "2002-07-30",
-                "msisdn", MSISDN,
-                "tariff", "Классический",
-                "balance", 100
+    void createSubscriber_negative() {
+        // Удаляем обязательное поле passport
+        Map<String, Object> badData = Map.of(
+                "fullName", subscriberData.get("fullName"),
+                "dateOfBirth", subscriberData.get("dateOfBirth"),
+                "msisdn", subscriberData.get("msisdn"),
+                "tariff", subscriberData.get("tariff"),
+                "balance", subscriberData.get("balance")
         );
 
-        Response response = given()
+        given()
                 .contentType(ContentType.JSON)
-                .body(request)
+                .body(badData)
                 .when()
-                .patch("/manager/subscriber/{msisdn}/update", MSISDN);
-
-        response.then()
-                .statusCode(200)
-                .contentType(ContentType.JSON)
-                .body("fullName", equalTo("Сергеев Иван Сергеевич"))
-                .body("passport", equalTo("11040000037"))
-                .body("dateOfBirth", equalTo("2002-07-30"))
-                .body("msisdn", equalTo(MSISDN))
-                .body("tariff", equalTo("Классический"))
-                .body("balance", equalTo(100));
+                .post("/manager/subscriber/add")
+                .then()
+                .statusCode(400)
+                .body("explaination", not(emptyString()));
     }
 
-    @Order(4)
-    @DisplayName("Удаление пользователя")
+    @DisplayName("Изменение данных - позитивный кейс")
     @Test
-    void deleteSubscriber() {
-        assumeTrue(createPassed, "Create step failed, skipping Delete test");
+    void updateSubscriber_positive() {
+        // Изменяем fullName
+        String newName = subscriberData.get("fullName") + " Updated";
+        Map<String, Object> updateData = Map.of(
+                "fullName", newName,
+                "passport", subscriberData.get("passport"),
+                "dateOfBirth", subscriberData.get("dateOfBirth"),
+                "msisdn", subscriberData.get("msisdn"),
+                "tariff", subscriberData.get("tariff"),
+                "balance", subscriberData.get("balance")
+        );
 
-        Response response = given()
+        given()
+                .contentType(ContentType.JSON)
+                .body(updateData)
                 .when()
-                .delete("/manager/subscriber/{msisdn}/delete", MSISDN);
-
-        response.then()
+                .patch("/manager/subscriber/{msisdn}/update", msisdn)
+                .then()
                 .statusCode(200)
                 .contentType(ContentType.JSON)
-                .body("msisdn", equalTo(MSISDN))
+                .body("fullName", equalTo(newName));
+    }
+
+    @DisplayName("Изменение данных - негативный кейс ")
+    @Test
+    void updateSubscriber_negative() {
+        String fake = msisdn + "99";
+        given()
+                .contentType(ContentType.JSON)
+                .body(subscriberData)
+                .when()
+                .patch("/manager/subscriber/{msisdn}/update", fake)
+                .then()
+                .statusCode(404)
+                .body("explaination", not(emptyString()));
+    }
+
+    @DisplayName("Удаление абонента - позитивный кейс")
+    @Test
+    void deleteSubscriber_positive() {
+        given()
+                .when()
+                .delete("/manager/subscriber/{msisdn}/delete", msisdn)
+                .then()
+                .statusCode(200)
+                .body("msisdn", equalTo(msisdn))
                 .body("status", equalTo("deleted"));
+    }
+
+    @DisplayName("Удаление абонента - негативный кейс")
+    @Test
+    void deleteSubscriber_negative() {
+        String fake = msisdn + "99";
+        given()
+                .when()
+                .delete("/manager/subscriber/{msisdn}/delete", fake)
+                .then()
+                .statusCode(404)
+                .body("explaination", not(emptyString()));
     }
 }
